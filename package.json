@@ -1,0 +1,17 @@
+{
+  "name": "findo",
+  "version": "1.0.0",
+  "description": "FINDO - Men's Hairstyle Recommender by Face Shape",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx browser-sync start --server --files \"*.html, *.css, *.js\""
+  },
+  "keywords": [
+    "hairstyles",
+    "men",
+    "face-shapes",
+    "grooming"
+  ],
+  "author": "Findo Team",
+  "license": "ISC"
+}

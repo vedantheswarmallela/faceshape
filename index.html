@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FINDO | Men's Hairstyle Matcher by Face Shape</title>
+    <meta name="description" content="Identify your face shape and discover the perfect haircuts, styling tips, and product recommendations tailored just for you. No logins required.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-grid"></div>
+    
+    <!-- Background Fashion & Grooming Doodles -->
+    <div class="bg-doodles">
+        <!-- SVG Doodle 1: Scissors -->
+        <svg class="bg-doodle doodle-scissors" viewBox="0 0 24 24"><path d="M6 22a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm12 6a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM8.12 14 12 10.12 15.88 14M9.88 10 12 7.88 14.12 10M12 2v4.88" /></svg>
+        
+        <!-- SVG Doodle 2: Comb -->
+        <svg class="bg-doodle doodle-comb" viewBox="0 0 24 24"><path d="M2 4h20v4H2zm4 4v10m4-10v10m4-10v10m4-10v10" /></svg>
+        
+        <!-- SVG Doodle 3: Hair Dryer -->
+        <svg class="bg-doodle doodle-dryer" viewBox="0 0 24 24"><path d="M10 4h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4h-2M14 14v6a2 2 0 0 1-4 0v-6M4 8h6M6 11h4" /></svg>
+        
+        <!-- SVG Doodle 4: Bow Tie -->
+        <svg class="bg-doodle doodle-bowtie" viewBox="0 0 24 24"><path d="M2 7.5c0-.83.67-1.5 1.5-1.5h17c.83 0 1.5.67 1.5 1.5v9c0 .83-.67 1.5-1.5 1.5h-17c-.83 0-1.5-.67-1.5-1.5v-9zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM2 7.5l10 4.5M22 7.5L12 12M2 16.5l10-4.5M22 16.5L12 12" /></svg>
+        
+        <!-- SVG Doodle 5: Hanger -->
+        <svg class="bg-doodle doodle-hanger" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 1 3 3c0 1.1-.9 2-2 2h-1a1 1 0 0 0-1 1v1l-8.6 5.2a1 1 0 0 0-.4.8v1a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-1a1 1 0 0 0-.4-.8L13 9V8" /></svg>
+        
+        <!-- SVG Doodle 6: Mirror -->
+        <svg class="bg-doodle doodle-mirror" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8v3a8 8 0 0 0 16 0v-3a8 8 0 0 0-8-8zm0 18v2M8 22h8" /></svg>
+
+        <!-- SVG Doodle 7: Straight Razor -->
+        <svg class="bg-doodle doodle-razor" viewBox="0 0 24 24"><path d="M3 5h13a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm13 6 4 8M12 5v6" /></svg>
+
+        <!-- SVG Doodle 8: Sunglasses -->
+        <svg class="bg-doodle doodle-sunglasses" viewBox="0 0 24 24"><path d="M2 12a3 3 0 0 0 6 0M16 12a3 3 0 0 0 6 0M8 12h8M2 12c0-2 1.5-3.5 3.5-3.5h1M22 12c0-2-1.5-3.5-3.5-3.5h-1M4 8.5C3 7 1.5 6 1.5 6M20 8.5C21 7 22.5 6 22.5 6" /></svg>
+    </div>
+
+    <!-- Splash Screen / Welcome -->
+    <div id="welcome-screen" class="view-panel active">
+        <div class="glass-card welcome-card animate-fade-in">
+            <div class="brand-badge">
+                <i data-lucide="scissors" class="icon-brand"></i>
+                <span>STYLE INSIGHTS</span>
+            </div>
+            <h1 class="gradient-text">FINDO</h1>
+            <p class="subtitle">Discover your face shape and unlock the absolute best hairstyles tailored specifically for your facial geometry.</p>
+            
+            <form id="username-form" class="welcome-form">
+                <div class="input-group">
+                    <label for="username-input" class="sr-only">Enter your username</label>
+                    <input type="text" id="username-input" placeholder="Enter a username to begin..." required autocomplete="off" maxlength="15">
+                </div>
+                <button type="submit" class="btn-primary">
+                    <span>Let's Begin</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
+            </form>
+            <div class="welcome-footer">
+                <i data-lucide="shield-check" class="icon-secure"></i>
+                <span>No password needed. Saves locally to your device.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Interface (Hidden initially) -->
+    <div id="app-container" class="hidden">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="app-logo" id="app-logo-btn" style="cursor: pointer; position: relative;">
+                    <div class="logo-wrapper" id="logo-content" style="display: flex; align-items: center; gap: 10px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);">
+                        <i data-lucide="scissors" class="logo-icon"></i>
+                        <span class="logo-text">FINDO</span>
+                    </div>
+                    <div class="instagram-handle" id="instagram-handle" style="position: absolute; left: 0; top: 50%; transform: translateY(-50%) scale(0.8); opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); font-family: var(--font-heading); font-weight: 700; color: #e1306c; white-space: nowrap; font-size: 1.15rem;">@vedhuu_u</div>
+                </div>
+                
+                <nav class="nav-menu">
+                    <button class="nav-tab active" data-tab="analyzer">
+                        <i data-lucide="scan-face"></i>
+                        <span>Analyzer</span>
+                    </button>
+                    <button class="nav-tab" data-tab="catalog">
+                        <i data-lucide="layout-grid"></i>
+                        <span>Catalog</span>
+                    </button>
+                    <button class="nav-tab" data-tab="guide">
+                        <i data-lucide="book-open"></i>
+                        <span>Hair Care Guide</span>
+                    </button>
+                    <button class="nav-tab" data-tab="profile" id="profile-tab-btn">
+                        <i data-lucide="user"></i>
+                        <span id="nav-username">Profile</span>
+                    </button>
+                </nav>
+
+                <div class="header-actions">
+                    <div class="user-pill">
+                        <div class="user-avatar" id="avatar-char">U</div>
+                        <span class="user-pill-name" id="user-display-name">Username</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="app-main">
+            <!-- VIEW: FACE ANALYZER -->
+            <section id="analyzer-view" class="view-section active">
+                <div class="section-header">
+                    <h2 class="section-title">Face Geometry Analyzer</h2>
+                    <p class="section-desc">Answer 4 quick visual questions to calculate your face shape, or choose to explore shapes manually below.</p>
+                </div>
+
+                <div class="analyzer-grid">
+                    <!-- Left: Interactive Quiz Card -->
+                    <div class="glass-card quiz-card" id="quiz-container">
+                        <!-- Quiz Progress Bar -->
+                        <div class="quiz-progress-wrapper">
+                            <div class="quiz-progress-text">Question <span id="current-q-num">1</span> of 4</div>
+                            <div class="quiz-progress-bar">
+                                <div class="quiz-progress-fill" id="quiz-progress-fill" style="width: 25%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Steps (Dynamic Content Inject) -->
+                        <div class="quiz-content" id="quiz-content">
+                            <!-- Injected by script.js -->
+                        </div>
+
+                        <!-- Quiz Navigation -->
+                        <div class="quiz-actions">
+                            <button id="quiz-prev-btn" class="btn-secondary" disabled>
+                                <i data-lucide="chevron-left"></i>
+                                <span>Back</span>
+                            </button>
+                            <button id="quiz-next-btn" class="btn-primary" disabled>
+                                <span>Next</span>
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Selector Side Panel -->
+                    <div class="glass-card direct-selector-card">
+                        <h3>Know Your Shape?</h3>
+                        <p>Skip the quiz and instantly select your face shape to view recommendations:</p>
+                        <div class="direct-grid" id="direct-shape-list">
+                            <!-- Injected by script.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result Panel (Revealed upon quiz completion) -->
+                <div id="analyzer-result-card" class="glass-card result-card hidden animate-fade-in">
+                    <div class="result-header">
+                        <div class="result-badge">YOUR SHAPE</div>
+                        <h3 id="result-shape-title" class="gradient-text">Square Face</h3>
+                        <p id="result-personal-greeting" style="font-size: 1.05rem; color: var(--color-primary); font-weight: 600; margin-top: 6px;"></p>
+                    </div>
+                    <div class="result-layout">
+                        <div class="result-visual-wrapper">
+                            <!-- Dynamically loaded face outline SVG -->
+                            <div class="shape-svg-container" id="result-shape-svg-container"></div>
+                            <div class="measurements-pill" id="result-defining-ratio">Ratio: Length ≈ Width</div>
+                        </div>
+                        <div class="result-details">
+                            <div class="result-group">
+                                <h4>Key Characteristics</h4>
+                                <p id="result-shape-desc">Description of the face shape features.</p>
+                            </div>
+                            <div class="result-group">
+                                <h4>Styling Goal</h4>
+                                <div class="tip-pill goal-pill">
+                                    <i data-lucide="sparkles"></i>
+                                    <span id="result-styling-goal">Soften edges and maintain proportion.</span>
+                                </div>
+                            </div>
+                            <div class="result-group warning-group">
+                                <h4>What to Avoid</h4>
+                                <div class="tip-pill avoid-pill">
+                                    <i data-lucide="ban"></i>
+                                    <span id="result-styling-avoid">Harsh boxy cuts or flat straight lines.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="result-footer-actions">
+                        <button id="view-matching-styles-btn" class="btn-primary btn-large">
+                            <i data-lucide="sparkles"></i>
+                            <span>View Hairstyles For Me</span>
+                        </button>
+                        <button id="retake-quiz-btn" class="btn-secondary">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Retake Quiz</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: HAIRSTYLES CATALOG -->
+            <section id="catalog-view" class="view-section hidden">
+                <div class="section-header-row">
+                    <div class="section-header">
+                        <h2 class="section-title">Hairstyles Directory</h2>
+                        <p class="section-desc">Explore professional styles suited to your face shape, or browse all collections.</p>
+                    </div>
+                    <div class="catalog-filters">
+                        <label for="shape-filter-select" class="sr-only">Filter by face shape</label>
+                        <select id="shape-filter-select" class="custom-select">
+                            <option value="all">Show All Shapes</option>
+                            <option value="oval">Oval Face</option>
+                            <option value="round">Round Face</option>
+                            <option value="square">Square Face</option>
+                            <option value="heart">Heart Face</option>
+                            <option value="diamond">Diamond Face</option>
+                            <option value="oblong">Oblong Face</option>
+                            <option value="triangle">Triangle Face</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="catalog-grid" id="catalog-grid">
+                    <!-- Hairstyle cards injected by script.js -->
+                </div>
+            </section>
+
+            <!-- VIEW: HAIR CARE GUIDE -->
+            <section id="guide-view" class="view-section hidden">
+                <div class="section-header">
+                    <h2 class="section-title">Master Grooming & Product Guide</h2>
+                    <p class="section-desc">Learn how to select, apply, and maintain your hair products like a professional barber.</p>
+                </div>
+
+                <!-- Products Table Card -->
+                <div class="glass-card guide-full-card animate-fade-in">
+                    <h3>Decoding Styling Products</h3>
+                    <p class="guide-p">The difference between pomade, clay, and wax can make or break a style. Here is your quick reference:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="guide-table">
+                            <thead>
+                                <tr>
+                                    <th>Product Type</th>
+                                    <th>Hold Level</th>
+                                    <th>Shine Finish</th>
+                                    <th>Best Suited For</th>
+                                    <th>Key Benefit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Pomade (Water-based)</strong></td>
+                                    <td>Medium to Strong</td>
+                                    <td>High / Wet Shine</td>
+                                    <td>Slick backs, pompadours, classic parts</td>
+                                    <td>Easy to wash out, sleek formal looks</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Hair Clay</strong></td>
+                                    <td>High / Firm</td>
+                                    <td>Matte / Natural</td>
+                                    <td>Textured crops, quiffs, messy/natural looks</td>
+                                    <td>Adds volume, absorbs oil, natural movement</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Hair Wax</strong></td>
+                                    <td>Medium to High</td>
+                                    <td>Low to Medium</td>
+                                    <td>Spiky hair, faux hawks, active days</td>
+                                    <td>Pliable hold (can restyle throughout day)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Styling Powder</strong></td>
+                                    <td>Light to Medium</td>
+                                    <td>Matte / Invisible</td>
+                                    <td>Fine hair, crop fades, quick textured look</td>
+                                    <td>Instant root volume and dry texture</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sea Salt Spray</strong></td>
+                                    <td>Light / Flexible</td>
+                                    <td>Matte / Natural</td>
+                                    <td>Curtain parts, wavy locks, pre-styling base</td>
+                                    <td>Enhances natural waves, adds beachy texture</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Barber Tips Grid -->
+                <div class="tips-grid">
+                    <div class="glass-card tip-card animate-fade-in-up">
+                        <div class="tip-icon-header">
+                            <i data-lucide="scissors" class="tip-icon"></i>
+                            <h4>How to Talk to Your Barber</h4>
+                        </div>
+                        <ul>
+                            <li><strong>Bring photos:</strong> A visual reference is worth a thousand words. Show photos from our Catalog.</li>
+                            <li><strong>Describe your routine:</strong> Tell them if you spend 2 minutes or 20 minutes styling in the morning.</li>
+                            <li><strong>Specify sides and top:</strong> Use terms like "taper fade" or "number 2 on the sides" if you know your preferences.</li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-card tip-card animate-fade-in-up" style="animation-delay: 0.1s;">
+                        <div class="tip-icon-header">
+                            <i data-lucide="thermometer" class="tip-icon"></i>
+                            <h4>Heat & Blow Dryer Secrets</h4>
+                        </div>
+                        <ul>
+                            <li><strong>Use a blow dryer:</strong> Heat sets the root direction. Crucial for quiffs and pompadours!</li>
+                            <li><strong>Finish with cool air:</strong> Use the cool shot button on your dryer to lock the style in place.</li>
+                            <li><strong>Pre-stylers:</strong> Apply a light spray or cream on damp hair before blow drying for extra protection and structure.</li>
+                        </ul>
+                    </div>
+
+                    <div class="glass-card tip-card animate-fade-in-up" style="animation-delay: 0.2s;">
+                        <div class="tip-icon-header">
+                            <i data-lucide="droplet" class="tip-icon"></i>
+                            <h4>Hair Washing & Health</h4>
+                        </div>
+                        <ul>
+                            <li><strong>Don't daily shampoo:</strong> Strips natural oils. Wash 2-3 times a week, and condition daily.</li>
+                            <li><strong>Match your scalp type:</strong> Use tea tree shampoos for oily hair, and moisturizing shampoos for dry hair.</li>
+                            <li><strong>Towel dry gently:</strong> Rubbing aggressively breaks hair fibers. Pat dry with a towel instead.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: USER PROFILE -->
+            <section id="profile-view" class="view-section hidden">
+                <div class="section-header">
+                    <h2 class="section-title">My Styling Dashboard</h2>
+                    <p class="section-desc">Manage your details, view saved face shape parameters, and check your bookmarked styles.</p>
+                </div>
+
+                <div class="profile-layout">
+                    <!-- Left: Profile Summary Card -->
+                    <div class="glass-card profile-user-card">
+                        <div class="profile-avatar-big" id="profile-avatar-big">U</div>
+                        <h3 id="profile-username-display">User</h3>
+                        <p class="profile-sub">Member since today</p>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-box">
+                                <span class="stat-num" id="stat-favorites-count">0</span>
+                                <span class="stat-label">Favorites</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-num" id="stat-face-shape">None</span>
+                                <span class="stat-label">Face Shape</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button id="profile-reset-btn" class="btn-danger">
+                                <i data-lucide="log-out"></i>
+                                <span>Reset Profile / Log Out</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Favorited Hairstyles Grid -->
+                    <div class="profile-favorites-wrapper">
+                        <h3>Bookmarked Hairstyles</h3>
+                        <div class="favorites-grid" id="favorites-grid">
+                            <!-- Dynamically loaded bookmarks -->
+                            <div class="no-favorites" id="no-favorites-message">
+                                <i data-lucide="bookmark" class="no-fav-icon"></i>
+                                <p>You haven't bookmarked any hairstyles yet. Browse the Catalog and tap the bookmark icon to save styles here!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Detail Overlay Modal -->
+    <div id="style-modal" class="modal-overlay hidden">
+        <div class="modal-card glass-card">
+            <button class="modal-close" id="modal-close-btn">
+                <i data-lucide="x"></i>
+            </button>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
