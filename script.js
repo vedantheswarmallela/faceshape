@@ -1395,6 +1395,10 @@ function closeModal() {
 // 10. VIRTUAL TRY-ON ("Try Hair") CONTROLLER LOGIC
 // ==========================================================================
 
+// ==========================================================================
+// 10. VIRTUAL TRY-ON ("Try Hair" Face Filter) CONTROLLER LOGIC
+// ==========================================================================
+
 // Global initialization of Try Hair view
 function initTryonView() {
     renderTryonStyleCarousel();
@@ -1454,20 +1458,36 @@ window.selectTryonHairstyle = function(imageId) {
     }
 };
 
-// Start camera stream
+// Start camera stream using MediaPipe
 window.initiateCameraAccess = function(silent = false) {
     const video = document.getElementById('tryon-video');
     const statusPrompt = document.getElementById('camera-status-prompt');
     if (!video) return;
     
-    // Stop any existing stream before restarting
+    // Stop any existing stream/tracking before restarting
     stopTryonCamera();
+    
+    // Initialize MediaPipe Face Mesh if not already done
+    if (!state.tryon.faceMesh) {
+        state.tryon.faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+        });
+        
+        state.tryon.faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        
+        state.tryon.faceMesh.onResults(onFaceMeshResults);
+    }
     
     const constraints = {
         video: {
             facingMode: state.tryon.facingMode,
             width: { ideal: 640 },
-            height: { ideal: 850 }
+            height: { ideal: 480 }
         },
         audio: false
     };
@@ -1484,7 +1504,27 @@ window.initiateCameraAccess = function(silent = false) {
                 video.classList.remove('environment-mode');
             }
             
-            if (statusPrompt) statusPrompt.style.display = 'none';
+            if (statusPrompt) {
+                statusPrompt.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                        <i data-lucide="loader" class="animate-spin" style="width:36px; height:36px; color:var(--color-primary);"></i>
+                        <p>Locating face... Look directly into the camera.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+            
+            // Start MediaPipe camera loop
+            state.tryon.camera = new Camera(video, {
+                onFrame: async () => {
+                    if (state.tryon.stream) {
+                        await state.tryon.faceMesh.send({image: video});
+                    }
+                },
+                width: 640,
+                height: 480
+            });
+            state.tryon.camera.start();
         })
         .catch(err => {
             console.error('Camera access error:', err);
@@ -1499,8 +1539,102 @@ window.initiateCameraAccess = function(silent = false) {
         });
 };
 
-// Stop webcam stream to save system memory
+// Callback for MediaPipe Face Mesh results
+function onFaceMeshResults(results) {
+    const video = document.getElementById('tryon-video');
+    const hair = document.getElementById('tryon-hair-image');
+    const statusPrompt = document.getElementById('camera-status-prompt');
+    
+    if (!video || !hair) return;
+    
+    // Hide status prompt as soon as we detect a face
+    if (statusPrompt && results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        statusPrompt.style.display = 'none';
+    }
+    
+    if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+        return; // No face detected in this frame
+    }
+    
+    const landmarks = results.multiFaceLandmarks[0];
+    
+    // Get current display size of video element
+    const displayWidth = video.offsetWidth;
+    const displayHeight = video.offsetHeight;
+    if (displayWidth === 0 || displayHeight === 0) return;
+    
+    // Landmark index mappings:
+    // Left eye center: landmark 33
+    // Right eye center: landmark 263
+    // Forehead hairline center: landmark 10
+    // Left jawpoint: landmark 234
+    // Right jawpoint: landmark 454
+    const leftEye = landmarks[33];
+    const rightEye = landmarks[263];
+    const forehead = landmarks[10];
+    const leftJaw = landmarks[234];
+    const rightJaw = landmarks[454];
+    
+    // 1. Calculate face width in pixels (distance between jaw edges)
+    const faceWidth = Math.hypot(
+        (rightJaw.x - leftJaw.x) * displayWidth,
+        (rightJaw.y - leftJaw.y) * displayHeight
+    );
+    
+    // 2. Calculate face tilt rotation (angle in degrees between the two eyes)
+    const angleRad = Math.atan2(
+        (rightEye.y - leftEye.y) * displayHeight,
+        (rightEye.x - leftEye.x) * displayWidth
+    );
+    let angleDeg = angleRad * (180 / Math.PI);
+    
+    // Mirror the tilt angle if we are using the selfie camera
+    if (state.tryon.facingMode === 'user') {
+        angleDeg = -angleDeg;
+    }
+    
+    // 3. Scale the haircut template based on face width and user scale slider
+    const hairWidth = faceWidth * 1.45 * state.tryon.scale;
+    const hairHeight = hairWidth; // Keep square ratio for transparent asset overlays
+    
+    // 4. Center overlay image on the hairline landmark 10
+    let hairCenterX = forehead.x * displayWidth;
+    let hairCenterY = forehead.y * displayHeight;
+    
+    // Reverse X coordinates if video stream is mirrored (selfie mode)
+    if (state.tryon.facingMode === 'user') {
+        hairCenterX = displayWidth - hairCenterX;
+    }
+    
+    // Vertical base shift (position hair slightly above the hairline)
+    const verticalBaseOffset = - (faceWidth * 0.12);
+    
+    const finalLeft = hairCenterX - (hairWidth / 2) + state.tryon.posX;
+    const finalTop = hairCenterY - (hairHeight * 0.42) + verticalBaseOffset + state.tryon.posY;
+    
+    // Apply transformations
+    hair.style.left = `${finalLeft}px`;
+    hair.style.top = `${finalTop}px`;
+    hair.style.width = `${hairWidth}px`;
+    hair.style.height = `${hairHeight}px`;
+    hair.style.transform = `rotate(${angleDeg + state.tryon.rotate}deg)`;
+    
+    // Save last tracking data for high-quality snapshot capturing
+    state.tryon.lastTrackingResult = {
+        landmarks: landmarks,
+        displayWidth: displayWidth,
+        displayHeight: displayHeight,
+        angleDeg: angleDeg,
+        faceWidth: faceWidth
+    };
+}
+
+// Stop webcam stream and MediaPipe camera loop
 function stopTryonCamera() {
+    if (state.tryon.camera) {
+        state.tryon.camera.stop();
+        state.tryon.camera = null;
+    }
     if (state.tryon.stream) {
         state.tryon.stream.getTracks().forEach(track => track.stop());
         state.tryon.stream = null;
@@ -1512,14 +1646,9 @@ function stopTryonCamera() {
     if (statusPrompt) statusPrompt.style.display = 'flex';
 }
 
-// Adjust transformations values
+// Update text labels only (transforms are handled dynamically inside Face Mesh results loop)
 function updateHairTransform() {
-    const hair = document.getElementById('tryon-hair-image');
-    if (!hair) return;
-    
-    hair.style.transform = `translate(${state.tryon.posX}px, ${state.tryon.posY}px) scale(${state.tryon.scale}) rotate(${state.tryon.rotate}deg)`;
-    
-    // Update labels
+    // Update label tags text content
     document.getElementById('val-scale').textContent = `${state.tryon.scale.toFixed(2)}x`;
     document.getElementById('val-rotate').textContent = `${state.tryon.rotate}°`;
     document.getElementById('val-posx').textContent = `${state.tryon.posX}px`;
@@ -1568,7 +1697,7 @@ function setupTryonSliders() {
     updateHairTransform();
 }
 
-// Touch and drag gesture calculations for portable mobile usage
+// Touch and drag gesture calculations for fine-tuning positioning offset
 function setupTryonGestures() {
     const hair = document.getElementById('tryon-hair-image');
     const container = document.getElementById('tryon-overlay-container');
@@ -1635,7 +1764,7 @@ function setupTryonGestures() {
     });
 }
 
-// Bind flip/reset buttons and capture snapshot
+// Bind action buttons
 function setupTryonActions() {
     const btnFlip = document.getElementById('btn-flip-camera');
     const btnReset = document.getElementById('btn-reset-tryon');
@@ -1675,8 +1804,9 @@ function takeTryonSnapshot() {
     const hair = document.getElementById('tryon-hair-image');
     const canvas = document.getElementById('tryon-canvas');
     const flash = document.getElementById('camera-flash-effect');
+    const tracking = state.tryon.lastTrackingResult;
     
-    if (!video || !hair || !canvas || !state.tryon.stream) return;
+    if (!video || !hair || !canvas || !state.tryon.stream || !tracking) return;
     
     // Play shutter flash animation
     if (flash) {
@@ -1690,13 +1820,13 @@ function takeTryonSnapshot() {
     
     // Match canvas width/height to actual video track resolution
     const videoWidth = video.videoWidth || 640;
-    const videoHeight = video.videoHeight || 850;
+    const videoHeight = video.videoHeight || 480;
     canvas.width = videoWidth;
     canvas.height = videoHeight;
     
     // Draw Video stream frame
     ctx.save();
-    // Front camera is mirrored inside CSS, so mirror it inside canvas context too if user mode
+    // Front camera is mirrored inside CSS video, so mirror inside canvas too if user mode
     if (state.tryon.facingMode === 'user') {
         ctx.translate(videoWidth, 0);
         ctx.scale(-1, 1);
@@ -1704,37 +1834,45 @@ function takeTryonSnapshot() {
     ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
     ctx.restore();
     
-    // Draw Haircut Overlay
-    // We calculate scaling ratios between video display size and actual resolution
-    const displayWidth = video.offsetWidth;
-    const displayHeight = video.offsetHeight;
+    // Draw Haircut Overlay using landmarks scaled to canvas dimensions
+    const landmarks = tracking.landmarks;
+    const forehead = landmarks[10];
+    const leftJaw = landmarks[234];
+    const rightJaw = landmarks[454];
     
-    const scaleRatioX = videoWidth / displayWidth;
-    const scaleRatioY = videoHeight / displayHeight;
+    const canvasFaceWidth = Math.hypot(
+        (rightJaw.x - leftJaw.x) * videoWidth,
+        (rightJaw.y - leftJaw.y) * videoHeight
+    );
     
-    // Find current styling specs of image
-    const hairWidth = hair.offsetWidth;
-    const hairHeight = hair.offsetHeight;
+    const canvasHairWidth = canvasFaceWidth * 1.45 * state.tryon.scale;
+    const canvasHairHeight = canvasHairWidth;
     
-    // Find centered position of overlay graphic relative to camera box
-    const hairLeft = hair.offsetLeft;
-    const hairTop = hair.offsetTop;
+    let canvasHairCenterX = forehead.x * videoWidth;
+    let canvasHairCenterY = forehead.y * videoHeight;
     
-    // Calculate final positions
-    const renderX = (hairLeft + state.tryon.posX) * scaleRatioX;
-    const renderY = (hairTop + state.tryon.posY) * scaleRatioY;
-    const renderWidth = hairWidth * state.tryon.scale * scaleRatioX;
-    const renderHeight = hairHeight * state.tryon.scale * scaleRatioY;
+    // Reverse X coordinates if video stream is mirrored (selfie mode)
+    if (state.tryon.facingMode === 'user') {
+        canvasHairCenterX = videoWidth - canvasHairCenterX;
+    }
+    
+    const canvasVerticalOffset = - (canvasFaceWidth * 0.12);
+    
+    // Scaling offsets relative to display-to-canvas resolution scaling
+    const scaleRatio = videoWidth / tracking.displayWidth;
+    const offsetXPx = state.tryon.posX * scaleRatio;
+    const offsetYPx = state.tryon.posY * scaleRatio;
+    
+    const renderX = canvasHairCenterX + offsetXPx;
+    const renderY = canvasHairCenterY + canvasVerticalOffset + offsetYPx;
     
     ctx.save();
-    // Set anchor point to center of image for rotation
-    const centerX = renderX + renderWidth / 2;
-    const centerY = renderY + renderHeight / 2;
-    ctx.translate(centerX, centerY);
-    ctx.rotate((state.tryon.rotate * Math.PI) / 180);
+    // Translate and rotate around center of hair rendering box
+    ctx.translate(renderX, renderY);
+    ctx.rotate(((tracking.angleDeg + state.tryon.rotate) * Math.PI) / 180);
     
-    // Draw
-    ctx.drawImage(hair, -renderWidth / 2, -renderHeight / 2, renderWidth, renderHeight);
+    // Draw centered image overlay
+    ctx.drawImage(hair, -canvasHairWidth / 2, -canvasHairHeight * 0.42, canvasHairWidth, canvasHairHeight);
     ctx.restore();
     
     // Trigger download
