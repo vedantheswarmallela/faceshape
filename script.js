@@ -729,11 +729,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Register Welcome Form Handler
     document.getElementById('username-form').addEventListener('submit', handleLogin);
     
+    // Register Mobile Menu Toggle Handler
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const navMenu = document.querySelector('.nav-menu');
+    if (mobileMenuBtn && navMenu) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            navMenu.classList.toggle('active');
+            e.stopPropagation();
+        });
+        
+        // Close menu when clicking outside of it
+        document.addEventListener('click', () => {
+            navMenu.classList.remove('active');
+        });
+    }
+
     // Register Tab Navigation Click Handlers
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             const targetTab = e.currentTarget.getAttribute('data-tab');
             switchTab(targetTab);
+            
+            // Close mobile menu drawer on selection
+            if (navMenu) navMenu.classList.remove('active');
         });
     });
     

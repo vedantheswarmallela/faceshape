@@ -426,6 +426,10 @@ body {
     height: 18px;
 }
 
+.mobile-menu-btn {
+    display: none;
+}
+
 .nav-tab:hover {
     color: var(--color-primary);
     background: rgba(99, 102, 241, 0.04);
@@ -1488,12 +1492,86 @@ body {
         width: 100%;
     }
     
-    .nav-menu {
-        display: none;
-    }
-    
     .header-content {
         justify-content: space-between;
+        position: relative;
+    }
+
+    .header-actions {
+        display: none !important; /* Hide user pill on mobile header to avoid compression */
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.15);
+        border: 0.5px solid rgba(255, 255, 255, 0.3);
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .mobile-menu-btn:active {
+        transform: scale(0.95);
+    }
+
+    .mobile-menu-btn i {
+        width: 20px;
+        height: 20px;
+    }
+
+    .nav-menu {
+        position: absolute;
+        top: 75px;
+        right: 0px;
+        display: none;
+        flex-direction: column;
+        background: rgba(235, 245, 238, 0.25); /* Mint green base overlay */
+        backdrop-filter: blur(35px);
+        -webkit-backdrop-filter: blur(35px);
+        border: 0.5px solid rgba(255, 255, 255, 0.35);
+        border-radius: 16px;
+        padding: 12px;
+        gap: 8px;
+        width: 200px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255,255,255,0.4);
+        z-index: 1000;
+        transform-origin: top right;
+    }
+
+    .nav-menu.active {
+        display: flex;
+        animation: slideDownIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .nav-tab {
+        width: 100%;
+        justify-content: flex-start;
+        padding: 12px 16px;
+        border-radius: 10px;
+        background: transparent;
+        border: none;
+    }
+
+    .nav-tab.active {
+        background: rgba(99, 102, 241, 0.12);
+        border: 0.5px solid rgba(99, 102, 241, 0.25);
+    }
+}
+
+@keyframes slideDownIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }
 
