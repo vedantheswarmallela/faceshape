@@ -95,6 +95,10 @@
                         <i data-lucide="layout-grid"></i>
                         <span>Catalog</span>
                     </button>
+                    <button class="nav-tab" data-tab="tryon">
+                        <i data-lucide="camera"></i>
+                        <span>Try Hair</span>
+                    </button>
                     <button class="nav-tab" data-tab="guide">
                         <i data-lucide="book-open"></i>
                         <span>Hair Care Guide</span>
@@ -234,6 +238,114 @@
                 <div class="catalog-grid" id="catalog-grid">
                     <!-- Hairstyle cards injected by script.js -->
                 </div>
+            </section>
+
+            <!-- VIEW: VIRTUAL TRY-ON ("Try Hair") -->
+            <section id="tryon-view" class="view-section hidden">
+                <div class="section-header-row">
+                    <div class="section-header">
+                        <h2 class="section-title">Virtual Try-On "Try Hair"</h2>
+                        <p class="section-desc">Overlay different hairstyles in real-time. Drag, resize, and rotate to fit perfectly! Works on both mobile and web.</p>
+                    </div>
+                </div>
+
+                <div class="tryon-grid">
+                    <!-- Left: Camera Viewport Card -->
+                    <div class="glass-card camera-card">
+                        <div class="camera-viewport-wrapper">
+                            <!-- Webcam Video Stream -->
+                            <video id="tryon-video" autoplay playsinline muted></video>
+                            
+                            <!-- Camera Permission/Status Overlay -->
+                            <div class="camera-status-overlay" id="camera-status-prompt">
+                                <i data-lucide="camera" class="camera-prompt-icon"></i>
+                                <p>Grant camera access to start the virtual try-on.</p>
+                                <button class="btn-primary" onclick="initiateCameraAccess()">Enable Camera</button>
+                            </div>
+
+                            <!-- Floating Hairstyle Graphic Overlay -->
+                            <div class="tryon-overlay-container" id="tryon-overlay-container">
+                                <img id="tryon-hair-image" class="draggable-hair" src="assets/short-quiff.png" alt="Hairstyle Overlay" style="transform: translate(0px, 0px) scale(1) rotate(0deg);">
+                            </div>
+
+                            <!-- Camera Flash Effect Div -->
+                            <div class="camera-flash" id="camera-flash-effect"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Interactive Controls Card -->
+                    <div class="glass-card tryon-controls-card">
+                        <h3 class="controls-title">Filter Tuning Tools</h3>
+                        
+                        <!-- Hair Style Selector Carousel -->
+                        <div class="control-group">
+                            <label class="control-label">Select Hairstyle</label>
+                            <div class="style-carousel-wrapper">
+                                <div class="style-carousel" id="tryon-style-carousel">
+                                    <!-- Injected dynamically by script.js -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual Adjusters -->
+                        <div class="adjusters-grid">
+                            <div class="slider-group">
+                                <div class="slider-label-row">
+                                    <span>Scale (Size)</span>
+                                    <span id="val-scale">1.00x</span>
+                                </div>
+                                <input type="range" id="slider-scale" min="0.5" max="2.0" step="0.01" value="1.00">
+                            </div>
+
+                            <div class="slider-group">
+                                <div class="slider-label-row">
+                                    <span>Rotation (Tilt)</span>
+                                    <span id="val-rotate">0°</span>
+                                </div>
+                                <input type="range" id="slider-rotate" min="-90" max="90" step="1" value="0">
+                            </div>
+
+                            <div class="slider-group">
+                                <div class="slider-label-row">
+                                    <span>Horizontal Adjust (X)</span>
+                                    <span id="val-posx">0px</span>
+                                </div>
+                                <input type="range" id="slider-posx" min="-200" max="200" step="1" value="0">
+                            </div>
+
+                            <div class="slider-group">
+                                <div class="slider-label-row">
+                                    <span>Vertical Adjust (Y)</span>
+                                    <span id="val-posy">0px</span>
+                                </div>
+                                <input type="range" id="slider-posy" min="-200" max="200" step="1" value="0">
+                            </div>
+                        </div>
+
+                        <!-- Actions Grid -->
+                        <div class="tryon-actions">
+                            <button id="btn-capture-snapshot" class="btn-primary btn-large" style="width: 100%;">
+                                <i data-lucide="aperture"></i>
+                                <span>Capture Snapshot</span>
+                            </button>
+                            
+                            <div class="tryon-secondary-actions" style="display: flex; gap: 10px; width: 100%;">
+                                <button id="btn-flip-camera" class="btn-secondary" style="flex: 1; padding: 12px 10px;">
+                                    <i data-lucide="switch-camera"></i>
+                                    <span>Flip Camera</span>
+                                </button>
+
+                                <button id="btn-reset-tryon" class="btn-secondary" style="flex: 1; padding: 12px 10px;">
+                                    <i data-lucide="rotate-ccw"></i>
+                                    <span>Reset Position</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden Canvas for stitching photos -->
+                <canvas id="tryon-canvas" style="display: none;"></canvas>
             </section>
 
             <!-- VIEW: HAIR CARE GUIDE -->

@@ -1876,3 +1876,264 @@ body {
     }
 }
 
+/* ==========================================================================
+   VIEW: VIRTUAL TRY-ON ("Try Hair")
+   ========================================================================== */
+.tryon-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+    width: 100%;
+}
+
+.camera-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.camera-viewport-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 3 / 4;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #111827;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#tryon-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* mirror front camera selfie view */
+}
+
+/* Facing mode switch helper class (front camera is mirrored, back camera is normal) */
+#tryon-video.environment-mode {
+    transform: scaleX(1);
+}
+
+.camera-status-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+    gap: 15px;
+    color: #fff;
+    z-index: 5;
+}
+
+.camera-prompt-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--color-primary);
+    animation: pulseScale 2s infinite ease-in-out;
+}
+
+.tryon-overlay-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+}
+
+.draggable-hair {
+    position: absolute;
+    top: 20%;
+    left: 20%;
+    width: 60%;
+    cursor: move;
+    pointer-events: auto; /* make hair draggable */
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: none; /* prevents default page scrolls on mobile */
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+}
+
+/* Flash effect */
+.camera-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.camera-flash.flash-active {
+    animation: flashShutter 0.5s ease-out forwards;
+}
+
+@keyframes flashShutter {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Tuning controls card */
+.tryon-controls-card {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    height: 100%;
+}
+
+.controls-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Style Carousel */
+.style-carousel-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+/* Scrollbar customization for style carousel */
+.style-carousel-wrapper::-webkit-scrollbar {
+    height: 4px;
+}
+.style-carousel-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.25);
+    border-radius: 2px;
+}
+
+.style-carousel {
+    display: flex;
+    gap: 12px;
+    width: max-content;
+    padding: 4px;
+}
+
+.carousel-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px;
+    width: 85px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 0.5px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.carousel-item:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+}
+
+.carousel-item.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+.carousel-img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.carousel-name {
+    font-size: 0.65rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.adjusters-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.slider-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+/* Glass Range slider overrides */
+.adjusters-grid input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 0.5px solid rgba(255, 255, 255, 0.25);
+    height: 6px;
+    border-radius: 5px;
+    outline: none;
+}
+
+.adjusters-grid input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    transition: transform 0.1s ease;
+}
+
+.adjusters-grid input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+
+.tryon-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* Responsiveness for Camera Grid */
+@media (max-width: 900px) {
+    .tryon-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

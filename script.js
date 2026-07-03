@@ -9,7 +9,23 @@ let state = {
     favorites: [],
     currentTab: 'analyzer',
     quizAnswers: [null, null, null, null],
-    currentQuizQuestion: 0
+    currentQuizQuestion: 0,
+    
+    // Virtual Try-On state variables
+    tryon: {
+        stream: null,
+        facingMode: 'user', // 'user' for selfie front, 'environment' for back camera
+        activeHairId: 'short-quiff', // Default selected hairstyle overlay
+        scale: 1.0,
+        rotate: 0,
+        posX: 0,
+        posY: 0,
+        isDragging: false,
+        dragStartX: 0,
+        dragStartY: 0,
+        hairStartX: 0,
+        hairStartY: 0
+    }
 };
 
 // ==========================================================================
@@ -830,9 +846,15 @@ function switchTab(tabId) {
         }
     });
     
-    // Trigger sub-renderers if necessary
+    // Trigger sub-renderers or camera handlers
     if (tabId === 'profile') {
         updateProfileTab();
+    }
+    
+    if (tabId === 'tryon') {
+        initTryonView();
+    } else {
+        stopTryonCamera();
     }
 }
 
@@ -1349,4 +1371,361 @@ window.openStyleDetails = function(styleId) {
 function closeModal() {
     document.getElementById('style-modal').classList.remove('active');
     document.body.style.overflow = 'auto'; // Unlock background scrolling
+}
+
+// ==========================================================================
+// 10. VIRTUAL TRY-ON ("Try Hair") CONTROLLER LOGIC
+// ==========================================================================
+
+// Global initialization of Try Hair view
+function initTryonView() {
+    renderTryonStyleCarousel();
+    initiateCameraAccess(true); // Attempt silent auto-start
+    setupTryonSliders();
+    setupTryonGestures();
+    setupTryonActions();
+}
+
+// Render the horizontal hairstyle filter icons list
+function renderTryonStyleCarousel() {
+    const carousel = document.getElementById('tryon-style-carousel');
+    if (!carousel) return;
+    
+    // Generate distinct haircuts list (unique by imageId to prevent duplicate overlays)
+    const uniqueStyles = [];
+    const seenIds = new Set();
+    
+    HAIRSTYLES_DATA.forEach(style => {
+        if (!seenIds.has(style.imageId)) {
+            seenIds.add(style.imageId);
+            uniqueStyles.push(style);
+        }
+    });
+    
+    let html = '';
+    uniqueStyles.forEach(style => {
+        const isActive = style.imageId === state.tryon.activeHairId ? 'active' : '';
+        html += `
+            <div class="carousel-item ${isActive}" data-image-id="${style.imageId}" onclick="selectTryonHairstyle('${style.imageId}')">
+                <img class="carousel-img" src="assets/${style.imageId}.png" alt="${style.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%221%22><circle cx=%2212%22 cy=%2212%22 r=%2210%22/></svg>'">
+                <span class="carousel-name">${style.name}</span>
+            </div>
+        `;
+    });
+    
+    carousel.innerHTML = html;
+}
+
+// Select style in virtual mirror
+window.selectTryonHairstyle = function(imageId) {
+    state.tryon.activeHairId = imageId;
+    
+    // Update active class in list items
+    document.querySelectorAll('.carousel-item').forEach(item => {
+        if (item.getAttribute('data-image-id') === imageId) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+    
+    // Update overlay image src
+    const imgEl = document.getElementById('tryon-hair-image');
+    if (imgEl) {
+        imgEl.src = `assets/${imageId}.png`;
+    }
+};
+
+// Start camera stream
+window.initiateCameraAccess = function(silent = false) {
+    const video = document.getElementById('tryon-video');
+    const statusPrompt = document.getElementById('camera-status-prompt');
+    if (!video) return;
+    
+    // Stop any existing stream before restarting
+    stopTryonCamera();
+    
+    const constraints = {
+        video: {
+            facingMode: state.tryon.facingMode,
+            width: { ideal: 640 },
+            height: { ideal: 850 }
+        },
+        audio: false
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            state.tryon.stream = stream;
+            video.srcObject = stream;
+            
+            // Adjust mirroring
+            if (state.tryon.facingMode === 'environment') {
+                video.classList.add('environment-mode');
+            } else {
+                video.classList.remove('environment-mode');
+            }
+            
+            if (statusPrompt) statusPrompt.style.display = 'none';
+        })
+        .catch(err => {
+            console.error('Camera access error:', err);
+            if (!silent && statusPrompt) {
+                statusPrompt.innerHTML = `
+                    <i data-lucide="camera-off" style="width:48px; height:48px; color:var(--color-rose);"></i>
+                    <p>Camera access denied or unavailable. Please check website permissions.</p>
+                    <button class="btn-primary" onclick="initiateCameraAccess()">Retry Access</button>
+                `;
+                lucide.createIcons();
+            }
+        });
+};
+
+// Stop webcam stream to save system memory
+function stopTryonCamera() {
+    if (state.tryon.stream) {
+        state.tryon.stream.getTracks().forEach(track => track.stop());
+        state.tryon.stream = null;
+    }
+    const video = document.getElementById('tryon-video');
+    if (video) video.srcObject = null;
+    
+    const statusPrompt = document.getElementById('camera-status-prompt');
+    if (statusPrompt) statusPrompt.style.display = 'flex';
+}
+
+// Adjust transformations values
+function updateHairTransform() {
+    const hair = document.getElementById('tryon-hair-image');
+    if (!hair) return;
+    
+    hair.style.transform = `translate(${state.tryon.posX}px, ${state.tryon.posY}px) scale(${state.tryon.scale}) rotate(${state.tryon.rotate}deg)`;
+    
+    // Update labels
+    document.getElementById('val-scale').textContent = `${state.tryon.scale.toFixed(2)}x`;
+    document.getElementById('val-rotate').textContent = `${state.tryon.rotate}°`;
+    document.getElementById('val-posx').textContent = `${state.tryon.posX}px`;
+    document.getElementById('val-posy').textContent = `${state.tryon.posY}px`;
+}
+
+// Bind sliders events
+function setupTryonSliders() {
+    const sScale = document.getElementById('slider-scale');
+    const sRotate = document.getElementById('slider-rotate');
+    const sPosX = document.getElementById('slider-posx');
+    const sPosY = document.getElementById('slider-posy');
+    
+    if (sScale) {
+        sScale.value = state.tryon.scale;
+        sScale.oninput = (e) => {
+            state.tryon.scale = parseFloat(e.target.value);
+            updateHairTransform();
+        };
+    }
+    
+    if (sRotate) {
+        sRotate.value = state.tryon.rotate;
+        sRotate.oninput = (e) => {
+            state.tryon.rotate = parseInt(e.target.value);
+            updateHairTransform();
+        };
+    }
+    
+    if (sPosX) {
+        sPosX.value = state.tryon.posX;
+        sPosX.oninput = (e) => {
+            state.tryon.posX = parseInt(e.target.value);
+            updateHairTransform();
+        };
+    }
+    
+    if (sPosY) {
+        sPosY.value = state.tryon.posY;
+        sPosY.oninput = (e) => {
+            state.tryon.posY = parseInt(e.target.value);
+            updateHairTransform();
+        };
+    }
+    
+    updateHairTransform();
+}
+
+// Touch and drag gesture calculations for portable mobile usage
+function setupTryonGestures() {
+    const hair = document.getElementById('tryon-hair-image');
+    const container = document.getElementById('tryon-overlay-container');
+    if (!hair || !container) return;
+    
+    // Mouse Events
+    hair.addEventListener('mousedown', (e) => {
+        state.tryon.isDragging = true;
+        state.tryon.dragStartX = e.clientX;
+        state.tryon.dragStartY = e.clientY;
+        state.tryon.hairStartX = state.tryon.posX;
+        state.tryon.hairStartY = state.tryon.posY;
+        e.preventDefault();
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+        if (!state.tryon.isDragging) return;
+        const deltaX = e.clientX - state.tryon.dragStartX;
+        const deltaY = e.clientY - state.tryon.dragStartY;
+        
+        state.tryon.posX = state.tryon.hairStartX + deltaX;
+        state.tryon.posY = state.tryon.hairStartY + deltaY;
+        
+        // Sync to sliders
+        document.getElementById('slider-posx').value = state.tryon.posX;
+        document.getElementById('slider-posy').value = state.tryon.posY;
+        
+        updateHairTransform();
+    });
+    
+    window.addEventListener('mouseup', () => {
+        state.tryon.isDragging = false;
+    });
+
+    // Mobile Touch Events (Single-touch dragging)
+    hair.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            state.tryon.isDragging = true;
+            state.tryon.dragStartX = e.touches[0].clientX;
+            state.tryon.dragStartY = e.touches[0].clientY;
+            state.tryon.hairStartX = state.tryon.posX;
+            state.tryon.hairStartY = state.tryon.posY;
+        }
+        e.preventDefault();
+    });
+
+    hair.addEventListener('touchmove', (e) => {
+        if (!state.tryon.isDragging || e.touches.length !== 1) return;
+        const deltaX = e.touches[0].clientX - state.tryon.dragStartX;
+        const deltaY = e.touches[0].clientY - state.tryon.dragStartY;
+        
+        state.tryon.posX = state.tryon.hairStartX + deltaX;
+        state.tryon.posY = state.tryon.hairStartY + deltaY;
+        
+        // Sync sliders
+        document.getElementById('slider-posx').value = state.tryon.posX;
+        document.getElementById('slider-posy').value = state.tryon.posY;
+        
+        updateHairTransform();
+    });
+
+    hair.addEventListener('touchend', () => {
+        state.tryon.isDragging = false;
+    });
+}
+
+// Bind flip/reset buttons and capture snapshot
+function setupTryonActions() {
+    const btnFlip = document.getElementById('btn-flip-camera');
+    const btnReset = document.getElementById('btn-reset-tryon');
+    const btnCapture = document.getElementById('btn-capture-snapshot');
+    
+    if (btnFlip) {
+        btnFlip.onclick = () => {
+            state.tryon.facingMode = state.tryon.facingMode === 'user' ? 'environment' : 'user';
+            initiateCameraAccess();
+        };
+    }
+    
+    if (btnReset) {
+        btnReset.onclick = () => {
+            state.tryon.scale = 1.0;
+            state.tryon.rotate = 0;
+            state.tryon.posX = 0;
+            state.tryon.posY = 0;
+            
+            document.getElementById('slider-scale').value = 1.0;
+            document.getElementById('slider-rotate').value = 0;
+            document.getElementById('slider-posx').value = 0;
+            document.getElementById('slider-posy').value = 0;
+            
+            updateHairTransform();
+        };
+    }
+    
+    if (btnCapture) {
+        btnCapture.onclick = takeTryonSnapshot;
+    }
+}
+
+// Render video frame and hair overlay to a high-quality Canvas and download JPG
+function takeTryonSnapshot() {
+    const video = document.getElementById('tryon-video');
+    const hair = document.getElementById('tryon-hair-image');
+    const canvas = document.getElementById('tryon-canvas');
+    const flash = document.getElementById('camera-flash-effect');
+    
+    if (!video || !hair || !canvas || !state.tryon.stream) return;
+    
+    // Play shutter flash animation
+    if (flash) {
+        flash.classList.remove('flash-active');
+        void flash.offsetWidth; // Reflow to reset animation
+        flash.classList.add('flash-active');
+        setTimeout(() => flash.classList.remove('flash-active'), 500);
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Match canvas width/height to actual video track resolution
+    const videoWidth = video.videoWidth || 640;
+    const videoHeight = video.videoHeight || 850;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+    
+    // Draw Video stream frame
+    ctx.save();
+    // Front camera is mirrored inside CSS, so mirror it inside canvas context too if user mode
+    if (state.tryon.facingMode === 'user') {
+        ctx.translate(videoWidth, 0);
+        ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+    ctx.restore();
+    
+    // Draw Haircut Overlay
+    // We calculate scaling ratios between video display size and actual resolution
+    const displayWidth = video.offsetWidth;
+    const displayHeight = video.offsetHeight;
+    
+    const scaleRatioX = videoWidth / displayWidth;
+    const scaleRatioY = videoHeight / displayHeight;
+    
+    // Find current styling specs of image
+    const hairWidth = hair.offsetWidth;
+    const hairHeight = hair.offsetHeight;
+    
+    // Find centered position of overlay graphic relative to camera box
+    const hairLeft = hair.offsetLeft;
+    const hairTop = hair.offsetTop;
+    
+    // Calculate final positions
+    const renderX = (hairLeft + state.tryon.posX) * scaleRatioX;
+    const renderY = (hairTop + state.tryon.posY) * scaleRatioY;
+    const renderWidth = hairWidth * state.tryon.scale * scaleRatioX;
+    const renderHeight = hairHeight * state.tryon.scale * scaleRatioY;
+    
+    ctx.save();
+    // Set anchor point to center of image for rotation
+    const centerX = renderX + renderWidth / 2;
+    const centerY = renderY + renderHeight / 2;
+    ctx.translate(centerX, centerY);
+    ctx.rotate((state.tryon.rotate * Math.PI) / 180);
+    
+    // Draw
+    ctx.drawImage(hair, -renderWidth / 2, -renderHeight / 2, renderWidth, renderHeight);
+    ctx.restore();
+    
+    // Trigger download
+    try {
+        const link = document.createElement('a');
+        link.download = `findo-tryon-${state.tryon.activeHairId}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.95);
+        link.click();
+    } catch (e) {
+        console.error('Error generating photo data url:', e);
+    }
 }
