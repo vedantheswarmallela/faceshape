@@ -14,6 +14,9 @@ let state = {
     // Virtual Try-On state variables
     tryon: {
         stream: null,
+        faceMesh: null,
+        isLooping: false,
+        lastTrackingResult: null,
         facingMode: 'user', // 'user' for selfie front, 'environment' for back camera
         activeHairId: 'short-quiff', // Default selected hairstyle overlay
         scale: 1.0,
@@ -1450,7 +1453,6 @@ window.selectTryonHairstyle = function(imageId) {
             item.classList.remove('active');
         }
     });
-    
     // Update overlay image src
     const imgEl = document.getElementById('tryon-hair-image');
     if (imgEl) {
@@ -1458,7 +1460,7 @@ window.selectTryonHairstyle = function(imageId) {
     }
 };
 
-// Start camera stream using MediaPipe
+// Start camera stream using MediaPipe Face Mesh
 window.initiateCameraAccess = function(silent = false) {
     const video = document.getElementById('tryon-video');
     const statusPrompt = document.getElementById('camera-status-prompt');
@@ -1466,6 +1468,21 @@ window.initiateCameraAccess = function(silent = false) {
     
     // Stop any existing stream/tracking before restarting
     stopTryonCamera();
+    
+    // Check if FaceMesh library failed to load (e.g. adblocker or connection issue)
+    if (typeof FaceMesh === 'undefined') {
+        if (statusPrompt) {
+            statusPrompt.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; padding: 20px;">
+                    <i data-lucide="shield-alert" style="width:48px; height:48px; color:var(--color-rose);"></i>
+                    <p style="font-weight:600;">Tracking Script Blocked</p>
+                    <p style="font-size:0.85rem; color:var(--color-text-secondary); max-width:280px; margin:0 auto;">The face filter script failed to load. Please disable any content blockers/ad-blockers and reload the page.</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+        return;
+    }
     
     // Initialize MediaPipe Face Mesh if not already done
     if (!state.tryon.faceMesh) {
@@ -1514,17 +1531,15 @@ window.initiateCameraAccess = function(silent = false) {
                 lucide.createIcons();
             }
             
-            // Start MediaPipe camera loop
-            state.tryon.camera = new Camera(video, {
-                onFrame: async () => {
-                    if (state.tryon.stream) {
-                        await state.tryon.faceMesh.send({image: video});
-                    }
-                },
-                width: 640,
-                height: 480
-            });
-            state.tryon.camera.start();
+            // Start direct animation frame detection loop
+            video.play()
+                .then(() => {
+                    state.tryon.isLooping = true;
+                    runFrameLoop();
+                })
+                .catch(err => {
+                    console.error("Video play failed:", err);
+                });
         })
         .catch(err => {
             console.error('Camera access error:', err);
@@ -1538,6 +1553,22 @@ window.initiateCameraAccess = function(silent = false) {
             }
         });
 };
+
+// Loop function to feed frames to Face Mesh
+async function runFrameLoop() {
+    const video = document.getElementById('tryon-video');
+    if (!video || !state.tryon.stream || !state.tryon.isLooping) return;
+    
+    if (video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+        try {
+            await state.tryon.faceMesh.send({image: video});
+        } catch (err) {
+            console.error("FaceMesh frame processing error:", err);
+        }
+    }
+    
+    requestAnimationFrame(runFrameLoop);
+}
 
 // Callback for MediaPipe Face Mesh results
 function onFaceMeshResults(results) {
@@ -1631,16 +1662,16 @@ function onFaceMeshResults(results) {
 
 // Stop webcam stream and MediaPipe camera loop
 function stopTryonCamera() {
-    if (state.tryon.camera) {
-        state.tryon.camera.stop();
-        state.tryon.camera = null;
-    }
+    state.tryon.isLooping = false;
     if (state.tryon.stream) {
         state.tryon.stream.getTracks().forEach(track => track.stop());
         state.tryon.stream = null;
     }
     const video = document.getElementById('tryon-video');
-    if (video) video.srcObject = null;
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+    }
     
     const statusPrompt = document.getElementById('camera-status-prompt');
     if (statusPrompt) statusPrompt.style.display = 'flex';
